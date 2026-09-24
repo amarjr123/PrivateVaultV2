@@ -1,15 +1,27 @@
 package com.example.privatevault;
 
-import android.app.*;
-import android.content.*;
+import android.app.AlertDialog;
+import android.content.ContentValues;
+import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.BitmapFactory;
 import android.net.Uri;
-import android.os.*;
+import android.os.Build;
+import android.os.Bundle;
 import android.provider.MediaStore;
+import android.text.InputFilter;
 import android.text.InputType;
-import android.view.*;
+import android.view.Gravity;
+import android.view.View;
+import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
-import android.widget.*;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -17,36 +29,57 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.biometric.BiometricManager;
 import androidx.biometric.BiometricPrompt;
 import androidx.core.content.ContextCompat;
-import androidx.recyclerview.widget.*;
+import androidx.recyclerview.widget.GridLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.security.MessageDigest;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.Executor;
 
 public class MainActivity extends AppCompatActivity {
 
     private File vault;
+
     private RecyclerView grid;
+
     private ArrayList<File> media = new ArrayList<>();
+
     private MediaAdapter adapter;
+
     private ActivityResultLauncher<String[]> picker;
 
     private View lockOverlay;
+
     private EditText pinInput;
+
     private Button unlockButton;
+
     private Button fingerprintButton;
 
     private boolean unlocked = false;
+
     private boolean pickingFile = false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
 
         setContentView(R.layout.activity_main);
 
-        vault = new File(getFilesDir(), "vault");
+        vault = new File(
+                getFilesDir(),
+                "vault"
+        );
 
         if (!vault.exists()) {
             vault.mkdirs();
@@ -54,24 +87,29 @@ public class MainActivity extends AppCompatActivity {
 
         grid = findViewById(R.id.grid);
 
-        grid.setLayoutManager(new GridLayoutManager(this, 3));
+        grid.setLayoutManager(
+                new GridLayoutManager(this, 3)
+        );
 
         adapter = new MediaAdapter();
+
         grid.setAdapter(adapter);
 
         /*
-         * IMPORTANT:
-         * Media grid is hidden until authentication succeeds.
+         * Photos/videos are completely hidden
+         * until authentication succeeds.
          */
         grid.setVisibility(View.GONE);
 
         setupPicker();
+
         setupButtons();
 
         createLockScreen();
 
         showLockScreen();
     }
+
 
     private void setupPicker() {
 
@@ -97,13 +135,14 @@ public class MainActivity extends AppCompatActivity {
         );
     }
 
+
     private void setupButtons() {
 
-        View add = findViewById(R.id.add);
+        View addButton = findViewById(R.id.add);
 
-        if (add != null) {
+        if (addButton != null) {
 
-            add.setOnClickListener(v -> {
+            addButton.setOnClickListener(v -> {
 
                 if (!unlocked) {
                     return;
@@ -120,11 +159,13 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        View settings = findViewById(R.id.settings);
 
-        if (settings != null) {
+        View settingsButton =
+                findViewById(R.id.settings);
 
-            settings.setOnClickListener(v -> {
+        if (settingsButton != null) {
+
+            settingsButton.setOnClickListener(v -> {
 
                 if (unlocked) {
                     settings();
@@ -133,9 +174,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     /*
-     * Creates the PIN screen programmatically.
-     * Therefore activity_main.xml does not need to be changed.
+     * Creates the lock screen programmatically.
      */
     private void createLockScreen() {
 
@@ -145,20 +186,36 @@ public class MainActivity extends AppCompatActivity {
         LinearLayout box =
                 new LinearLayout(this);
 
-        box.setOrientation(LinearLayout.VERTICAL);
-        box.setGravity(Gravity.CENTER);
-        box.setPadding(40, 40, 40, 40);
+        box.setOrientation(
+                LinearLayout.VERTICAL
+        );
+
+        box.setGravity(
+                Gravity.CENTER
+        );
+
+        box.setPadding(
+                40,
+                40,
+                40,
+                40
+        );
 
         box.setBackgroundColor(
                 0xFFFFFFFF
         );
 
+
         TextView icon =
                 new TextView(this);
 
         icon.setText("🔐");
+
         icon.setTextSize(60);
-        icon.setGravity(Gravity.CENTER);
+
+        icon.setGravity(
+                Gravity.CENTER
+        );
 
         box.addView(
                 icon,
@@ -168,14 +225,28 @@ public class MainActivity extends AppCompatActivity {
                 )
         );
 
+
         TextView title =
                 new TextView(this);
 
-        title.setText("Private Vault");
+        title.setText(
+                "Private Vault"
+        );
+
         title.setTextSize(30);
-        title.setTextColor(0xFF111111);
-        title.setGravity(Gravity.CENTER);
-        title.setTypeface(null, 1);
+
+        title.setTextColor(
+                0xFF111111
+        );
+
+        title.setGravity(
+                Gravity.CENTER
+        );
+
+        title.setTypeface(
+                null,
+                1
+        );
 
         LinearLayout.LayoutParams titleParams =
                 new LinearLayout.LayoutParams(
@@ -183,9 +254,18 @@ public class MainActivity extends AppCompatActivity {
                         -2
                 );
 
-        titleParams.setMargins(0, 15, 0, 8);
+        titleParams.setMargins(
+                0,
+                15,
+                0,
+                8
+        );
 
-        box.addView(title, titleParams);
+        box.addView(
+                title,
+                titleParams
+        );
+
 
         TextView message =
                 new TextView(this);
@@ -195,8 +275,14 @@ public class MainActivity extends AppCompatActivity {
         );
 
         message.setTextSize(16);
-        message.setTextColor(0xFF555555);
-        message.setGravity(Gravity.CENTER);
+
+        message.setTextColor(
+                0xFF555555
+        );
+
+        message.setGravity(
+                Gravity.CENTER
+        );
 
         box.addView(
                 message,
@@ -206,19 +292,35 @@ public class MainActivity extends AppCompatActivity {
                 )
         );
 
+
         pinInput =
                 new EditText(this);
 
-        pinInput.setHint("PIN");
+        pinInput.setHint(
+                "PIN"
+        );
+
         pinInput.setTextSize(22);
-        pinInput.setGravity(Gravity.CENTER);
+
+        pinInput.setGravity(
+                Gravity.CENTER
+        );
+
         pinInput.setInputType(
                 InputType.TYPE_CLASS_NUMBER |
-                InputType.TYPE_NUMBER_VARIATION_PASSWORD
+                        InputType.TYPE_NUMBER_VARIATION_PASSWORD
         );
 
         pinInput.setSingleLine(true);
-        pinInput.setMaxLength(8);
+
+        /*
+         * Correct way to limit EditText length.
+         */
+        pinInput.setFilters(
+                new InputFilter[]{
+                        new InputFilter.LengthFilter(8)
+                }
+        );
 
         LinearLayout.LayoutParams pinParams =
                 new LinearLayout.LayoutParams(
@@ -227,7 +329,10 @@ public class MainActivity extends AppCompatActivity {
                 );
 
         pinParams.setMargins(
-                0, 25, 0, 12
+                0,
+                25,
+                0,
+                12
         );
 
         box.addView(
@@ -235,10 +340,13 @@ public class MainActivity extends AppCompatActivity {
                 pinParams
         );
 
+
         unlockButton =
                 new Button(this);
 
-        unlockButton.setText("UNLOCK");
+        unlockButton.setText(
+                "UNLOCK"
+        );
 
         box.addView(
                 unlockButton,
@@ -247,6 +355,7 @@ public class MainActivity extends AppCompatActivity {
                         55
                 )
         );
+
 
         fingerprintButton =
                 new Button(this);
@@ -266,13 +375,17 @@ public class MainActivity extends AppCompatActivity {
                 );
 
         fingerParams.setMargins(
-                0, 8, 0, 0
+                0,
+                8,
+                0,
+                0
         );
 
         box.addView(
                 fingerprintButton,
                 fingerParams
         );
+
 
         lockOverlay = box;
 
@@ -284,37 +397,42 @@ public class MainActivity extends AppCompatActivity {
                 )
         );
 
+
         unlockButton.setOnClickListener(
                 v -> verifyPin()
         );
+
 
         fingerprintButton.setOnClickListener(
                 v -> biometricUnlock()
         );
     }
 
+
     private boolean hasPin() {
 
-        String hash =
+        SharedPreferences prefs =
                 getSharedPreferences(
                         "secure",
                         MODE_PRIVATE
-                ).getString(
+                );
+
+        String hash =
+                prefs.getString(
                         "pin_hash",
                         null
                 );
 
         String oldPin =
-                getSharedPreferences(
-                        "secure",
-                        MODE_PRIVATE
-                ).getString(
+                prefs.getString(
                         "pin",
                         null
                 );
 
-        return hash != null || oldPin != null;
+        return hash != null ||
+                oldPin != null;
     }
+
 
     private void showLockScreen() {
 
@@ -329,6 +447,7 @@ public class MainActivity extends AppCompatActivity {
         );
 
         pinInput.setText("");
+
 
         if (!hasPin()) {
 
@@ -346,11 +465,13 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     private void verifyPin() {
 
         String entered =
                 pinInput.getText()
                         .toString();
+
 
         if (entered.length() < 4 ||
                 entered.length() > 8) {
@@ -362,39 +483,42 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        String savedHash =
+
+        SharedPreferences prefs =
                 getSharedPreferences(
                         "secure",
                         MODE_PRIVATE
-                ).getString(
+                );
+
+
+        String savedHash =
+                prefs.getString(
                         "pin_hash",
                         null
                 );
 
+
         String oldPin =
-                getSharedPreferences(
-                        "secure",
-                        MODE_PRIVATE
-                ).getString(
+                prefs.getString(
                         "pin",
                         null
                 );
 
+
         /*
-         * First-time PIN creation.
+         * First launch:
+         * Create PIN.
          */
         if (savedHash == null &&
                 oldPin == null) {
 
-            getSharedPreferences(
-                    "secure",
-                    MODE_PRIVATE
-            ).edit()
+            prefs.edit()
                     .putString(
                             "pin_hash",
                             sha256(entered)
                     )
                     .apply();
+
 
             Toast.makeText(
                     this,
@@ -402,13 +526,15 @@ public class MainActivity extends AppCompatActivity {
                     Toast.LENGTH_SHORT
             ).show();
 
+
             unlockVault();
 
             return;
         }
 
+
         /*
-         * New secure PIN.
+         * Secure hashed PIN.
          */
         if (savedHash != null &&
                 savedHash.equals(
@@ -420,19 +546,14 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+
         /*
-         * Compatibility with your old V2 PIN.
+         * Support the old V2 PIN.
          */
         if (oldPin != null &&
                 oldPin.equals(entered)) {
 
-            /*
-             * Convert old PIN to hashed PIN.
-             */
-            getSharedPreferences(
-                    "secure",
-                    MODE_PRIVATE
-            ).edit()
+            prefs.edit()
                     .putString(
                             "pin_hash",
                             sha256(entered)
@@ -440,10 +561,12 @@ public class MainActivity extends AppCompatActivity {
                     .remove("pin")
                     .apply();
 
+
             unlockVault();
 
             return;
         }
+
 
         pinInput.setError(
                 "Wrong PIN"
@@ -451,12 +574,14 @@ public class MainActivity extends AppCompatActivity {
 
         pinInput.setText("");
 
+
         Toast.makeText(
                 this,
                 "Wrong PIN",
                 Toast.LENGTH_SHORT
         ).show();
     }
+
 
     private void unlockVault() {
 
@@ -472,11 +597,13 @@ public class MainActivity extends AppCompatActivity {
 
         load();
 
+
         InputMethodManager imm =
                 (InputMethodManager)
                         getSystemService(
                                 INPUT_METHOD_SERVICE
                         );
+
 
         if (imm != null) {
 
@@ -486,6 +613,7 @@ public class MainActivity extends AppCompatActivity {
             );
         }
     }
+
 
     private void lockVault() {
 
@@ -509,6 +637,7 @@ public class MainActivity extends AppCompatActivity {
                 "UNLOCK"
         );
 
+
         Toast.makeText(
                 this,
                 "Vault locked",
@@ -516,11 +645,7 @@ public class MainActivity extends AppCompatActivity {
         ).show();
     }
 
-    /*
-     * Android Back:
-     * If vault is open, first Back locks it.
-     * Second Back exits the app.
-     */
+
     @Override
     public void onBackPressed() {
 
@@ -534,8 +659,9 @@ public class MainActivity extends AppCompatActivity {
         super.onBackPressed();
     }
 
+
     /*
-     * When app goes to background, lock it.
+     * Lock when app goes to background.
      * File picker is excluded.
      */
     @Override
@@ -550,6 +676,7 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     private void showFingerprintIfAvailable() {
 
         if (Build.VERSION.SDK_INT < 23) {
@@ -561,10 +688,12 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+
         int result =
                 BiometricManager
                         .from(this)
                         .canAuthenticate();
+
 
         if (result ==
                 BiometricManager.BIOMETRIC_SUCCESS) {
@@ -581,12 +710,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     private void biometricUnlock() {
 
         Executor executor =
                 ContextCompat.getMainExecutor(
                         this
                 );
+
 
         BiometricPrompt prompt =
                 new BiometricPrompt(
@@ -602,20 +733,22 @@ public class MainActivity extends AppCompatActivity {
                                 unlockVault();
                             }
 
+
                             @Override
                             public void onAuthenticationError(
                                     int errorCode,
-                                    CharSequence errString
+                                    CharSequence error
                             ) {
 
                                 Toast.makeText(
                                         MainActivity.this,
-                                        errString,
+                                        error,
                                         Toast.LENGTH_SHORT
                                 ).show();
                             }
                         }
                 );
+
 
         BiometricPrompt.PromptInfo info =
                 new BiometricPrompt.PromptInfo.Builder()
@@ -623,17 +756,21 @@ public class MainActivity extends AppCompatActivity {
                                 "Private Vault"
                         )
                         .setSubtitle(
-                                "Unlock your private photos and videos"
+                                "Unlock your private media"
                         )
                         .setNegativeButtonText(
                                 "Use PIN"
                         )
                         .build();
 
+
         prompt.authenticate(info);
     }
 
-    private String sha256(String value) {
+
+    private String sha256(
+            String value
+    ) {
 
         try {
 
@@ -642,13 +779,16 @@ public class MainActivity extends AppCompatActivity {
                             "SHA-256"
                     );
 
+
             byte[] bytes =
                     digest.digest(
                             value.getBytes("UTF-8")
                     );
 
+
             StringBuilder result =
                     new StringBuilder();
+
 
             for (byte b : bytes) {
 
@@ -660,6 +800,7 @@ public class MainActivity extends AppCompatActivity {
                 );
             }
 
+
             return result.toString();
 
         } catch (Exception e) {
@@ -667,6 +808,7 @@ public class MainActivity extends AppCompatActivity {
             return value;
         }
     }
+
 
     private void settings() {
 
@@ -678,8 +820,12 @@ public class MainActivity extends AppCompatActivity {
         );
 
         box.setPadding(
-                40, 10, 40, 0
+                40,
+                10,
+                40,
+                0
         );
+
 
         EditText oldPin =
                 new EditText(this);
@@ -690,10 +836,17 @@ public class MainActivity extends AppCompatActivity {
 
         oldPin.setInputType(
                 InputType.TYPE_CLASS_NUMBER |
-                InputType.TYPE_NUMBER_VARIATION_PASSWORD
+                        InputType.TYPE_NUMBER_VARIATION_PASSWORD
+        );
+
+        oldPin.setFilters(
+                new InputFilter[]{
+                        new InputFilter.LengthFilter(8)
+                }
         );
 
         box.addView(oldPin);
+
 
         EditText newPin =
                 new EditText(this);
@@ -704,12 +857,17 @@ public class MainActivity extends AppCompatActivity {
 
         newPin.setInputType(
                 InputType.TYPE_CLASS_NUMBER |
-                InputType.TYPE_NUMBER_VARIATION_PASSWORD
+                        InputType.TYPE_NUMBER_VARIATION_PASSWORD
         );
 
-        newPin.setMaxLength(8);
+        newPin.setFilters(
+                new InputFilter[]{
+                        new InputFilter.LengthFilter(8)
+                }
+        );
 
         box.addView(newPin);
+
 
         new AlertDialog.Builder(this)
                 .setTitle(
@@ -728,34 +886,39 @@ public class MainActivity extends AppCompatActivity {
                                     newPin.getText()
                                             .toString();
 
-                            String savedHash =
+
+                            SharedPreferences prefs =
                                     getSharedPreferences(
                                             "secure",
                                             MODE_PRIVATE
-                                    ).getString(
+                                    );
+
+
+                            String savedHash =
+                                    prefs.getString(
                                             "pin_hash",
                                             null
                                     );
 
+
                             String oldStoredPin =
-                                    getSharedPreferences(
-                                            "secure",
-                                            MODE_PRIVATE
-                                    ).getString(
+                                    prefs.getString(
                                             "pin",
                                             null
                                     );
+
 
                             boolean oldCorrect =
                                     (savedHash != null &&
                                             savedHash.equals(
                                                     sha256(old)
                                             ))
-                                    ||
-                                    (oldStoredPin != null &&
-                                            oldStoredPin.equals(
-                                                    old
-                                            ));
+                                            ||
+                                            (oldStoredPin != null &&
+                                                    oldStoredPin.equals(
+                                                            old
+                                                    ));
+
 
                             if (!oldCorrect) {
 
@@ -767,6 +930,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 return;
                             }
+
 
                             if (newP.length() < 4 ||
                                     newP.length() > 8) {
@@ -780,10 +944,8 @@ public class MainActivity extends AppCompatActivity {
                                 return;
                             }
 
-                            getSharedPreferences(
-                                    "secure",
-                                    MODE_PRIVATE
-                            ).edit()
+
+                            prefs.edit()
                                     .putString(
                                             "pin_hash",
                                             sha256(newP)
@@ -791,11 +953,13 @@ public class MainActivity extends AppCompatActivity {
                                     .remove("pin")
                                     .apply();
 
+
                             Toast.makeText(
                                     this,
                                     "PIN changed",
                                     Toast.LENGTH_SHORT
                             ).show();
+
 
                             lockVault();
                         }
@@ -807,11 +971,13 @@ public class MainActivity extends AppCompatActivity {
                 .show();
     }
 
+
     private void copyToVault(Uri uri) {
 
         if (!unlocked) {
             return;
         }
+
 
         try {
 
@@ -819,7 +985,9 @@ public class MainActivity extends AppCompatActivity {
                     getContentResolver()
                             .getType(uri);
 
+
             String extension;
+
 
             if (mime != null &&
                     mime.startsWith("video/")) {
@@ -831,52 +999,71 @@ public class MainActivity extends AppCompatActivity {
                 extension = ".jpg";
             }
 
+
             File output =
                     new File(
                             vault,
                             "media_" +
-                            System.currentTimeMillis() +
-                            "_" +
-                            Math.abs(
-                                    uri.hashCode()
-                            ) +
-                            extension
+                                    System.currentTimeMillis() +
+                                    "_" +
+                                    Math.abs(
+                                            uri.hashCode()
+                                    ) +
+                                    extension
                     );
 
-            try (
-                    InputStream input =
-                            getContentResolver()
-                                    .openInputStream(uri);
 
-                    OutputStream outputStream =
-                            new FileOutputStream(
-                                    output
-                            )
+            InputStream input =
+                    getContentResolver()
+                            .openInputStream(uri);
+
+
+            OutputStream outputStream =
+                    new FileOutputStream(
+                            output
+                    );
+
+
+            if (input == null) {
+
+                outputStream.close();
+
+                throw new IOException(
+                        "Could not read selected file"
+                );
+            }
+
+
+            byte[] buffer =
+                    new byte[8192];
+
+            int length;
+
+
+            while (
+                    (length =
+                            input.read(buffer)) != -1
             ) {
 
-                byte[] buffer =
-                        new byte[8192];
-
-                int length;
-
-                while (
-                        (length =
-                                input.read(buffer)) != -1
-                ) {
-
-                    outputStream.write(
-                            buffer,
-                            0,
-                            length
-                    );
-                }
+                outputStream.write(
+                        buffer,
+                        0,
+                        length
+                );
             }
+
+
+            input.close();
+
+            outputStream.close();
+
 
             Toast.makeText(
                     this,
                     "Added to Private Vault",
                     Toast.LENGTH_SHORT
             ).show();
+
 
         } catch (Exception e) {
 
@@ -889,26 +1076,28 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     private void load() {
 
         if (!unlocked) {
             return;
         }
 
+
         media.clear();
+
 
         File[] files =
                 vault.listFiles();
 
+
         if (files != null) {
 
-            for (File file : files) {
-
-                if (file.isFile()) {
-                    media.add(file);
-                }
-            }
+            media.addAll(
+                    Arrays.asList(files)
+            );
         }
+
 
         Collections.sort(
                 media,
@@ -919,8 +1108,10 @@ public class MainActivity extends AppCompatActivity {
                         )
         );
 
+
         adapter.notifyDataSetChanged();
     }
+
 
     private void actions(File file) {
 
@@ -928,14 +1119,18 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+
         String[] options = {
                 "Preview",
                 "Restore to Gallery",
                 "Delete permanently"
         };
 
+
         new AlertDialog.Builder(this)
-                .setTitle("Vault File")
+                .setTitle(
+                        "Vault File"
+                )
                 .setItems(
                         options,
                         (dialog, which) -> {
@@ -957,13 +1152,16 @@ public class MainActivity extends AppCompatActivity {
                 .show();
     }
 
+
     private void preview(File file) {
 
-        /*
-         * For now show a simple preview dialog for images.
-         * Video preview can be added with a dedicated VideoView screen.
-         */
-        if (!file.getName().endsWith(".mp4")) {
+        if (!unlocked) {
+            return;
+        }
+
+
+        if (!file.getName()
+                .endsWith(".mp4")) {
 
             ImageView image =
                     new ImageView(this);
@@ -974,9 +1172,15 @@ public class MainActivity extends AppCompatActivity {
                     )
             );
 
-            image.setAdjustViewBounds(true);
+            image.setAdjustViewBounds(
+                    true
+            );
+
 
             new AlertDialog.Builder(this)
+                    .setTitle(
+                            "Private Photo"
+                    )
                     .setView(image)
                     .setPositiveButton(
                             "Close",
@@ -993,6 +1197,7 @@ public class MainActivity extends AppCompatActivity {
             ).show();
         }
     }
+
 
     private void deleteFile(File file) {
 
@@ -1034,11 +1239,13 @@ public class MainActivity extends AppCompatActivity {
                 .show();
     }
 
+
     private void restore(File file) {
 
         if (!unlocked) {
             return;
         }
+
 
         try {
 
@@ -1046,25 +1253,32 @@ public class MainActivity extends AppCompatActivity {
                     file.getName()
                             .endsWith(".mp4");
 
+
             String mime =
                     video
                             ? "video/mp4"
                             : "image/jpeg";
 
+
             ContentValues values =
                     new ContentValues();
+
 
             values.put(
                     MediaStore.MediaColumns.DISPLAY_NAME,
                     "Restored_" +
                             System.currentTimeMillis() +
-                            (video ? ".mp4" : ".jpg")
+                            (video
+                                    ? ".mp4"
+                                    : ".jpg")
             );
+
 
             values.put(
                     MediaStore.MediaColumns.MIME_TYPE,
                     mime
             );
+
 
             if (Build.VERSION.SDK_INT >= 29) {
 
@@ -1076,10 +1290,12 @@ public class MainActivity extends AppCompatActivity {
                 );
             }
 
+
             Uri collection =
                     video
                             ? MediaStore.Video.Media.EXTERNAL_CONTENT_URI
                             : MediaStore.Images.Media.EXTERNAL_CONTENT_URI;
+
 
             Uri destination =
                     getContentResolver()
@@ -1088,6 +1304,7 @@ public class MainActivity extends AppCompatActivity {
                                     values
                             );
 
+
             if (destination == null) {
 
                 throw new IOException(
@@ -1095,44 +1312,65 @@ public class MainActivity extends AppCompatActivity {
                 );
             }
 
-            try (
-                    InputStream input =
-                            new FileInputStream(file);
 
-                    OutputStream output =
-                            getContentResolver()
-                                    .openOutputStream(
-                                            destination
-                                    )
+            OutputStream output =
+                    getContentResolver()
+                            .openOutputStream(
+                                    destination
+                            );
+
+
+            InputStream input =
+                    new FileInputStream(
+                            file
+                    );
+
+
+            if (output == null) {
+
+                input.close();
+
+                throw new IOException(
+                        "Could not open Gallery"
+                );
+            }
+
+
+            byte[] buffer =
+                    new byte[8192];
+
+            int length;
+
+
+            while (
+                    (length =
+                            input.read(buffer)) != -1
             ) {
 
-                byte[] buffer =
-                        new byte[8192];
-
-                int length;
-
-                while (
-                        (length =
-                                input.read(buffer)) != -1
-                ) {
-
-                    output.write(
-                            buffer,
-                            0,
-                            length
-                    );
-                }
+                output.write(
+                        buffer,
+                        0,
+                        length
+                );
             }
+
+
+            input.close();
+
+            output.close();
+
 
             file.delete();
 
             load();
+
 
             Toast.makeText(
                     this,
                     "Restored to Gallery",
                     Toast.LENGTH_SHORT
             ).show();
+
 
         } catch (Exception e) {
 
@@ -1145,14 +1383,18 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+
     class MediaAdapter
             extends RecyclerView.Adapter<MediaAdapter.VH> {
+
 
         class VH
                 extends RecyclerView.ViewHolder {
 
             ImageView image;
+
             TextView video;
+
 
             VH(View view) {
 
@@ -1170,6 +1412,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
 
+
         @Override
         public VH onCreateViewHolder(
                 ViewGroup parent,
@@ -1184,8 +1427,10 @@ public class MainActivity extends AppCompatActivity {
                                     false
                             );
 
+
             return new VH(view);
         }
+
 
         @Override
         public void onBindViewHolder(
@@ -1195,6 +1440,7 @@ public class MainActivity extends AppCompatActivity {
 
             File file =
                     media.get(position);
+
 
             if (file.getName()
                     .endsWith(".mp4")) {
@@ -1221,10 +1467,12 @@ public class MainActivity extends AppCompatActivity {
                 );
             }
 
+
             holder.itemView.setOnClickListener(
                     v -> actions(file)
             );
         }
+
 
         @Override
         public int getItemCount() {
